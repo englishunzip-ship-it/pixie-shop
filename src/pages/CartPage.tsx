@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight, Check } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, Tag, ArrowRight, Check, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/contexts/CartContext';
-import { useSettings, validateCoupon } from '@/hooks/useFirestoreData';
+import { useProducts, useSettings, validateCoupon } from '@/hooks/useFirestoreData';
 import { useAuth } from '@/contexts/AuthContext';
+import ProductCard from '@/components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CartPage() {
   const { items, removeFromCart, updateQuantity, itemCount } = useCart();
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { products } = useProducts();
   const navigate = useNavigate();
   const [coupon, setCoupon] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState('');
@@ -58,15 +60,51 @@ export default function CartPage() {
 
   const finalTotal = total - discountAmount + DELIVERY_CHARGE;
 
+  // Product suggestions - exclude items already in cart
+  const cartProductIds = new Set(items.map(i => i.productId));
+  const suggestedProducts = products.filter(p => !cartProductIds.has(p.id)).slice(0, 8);
+
+  const CouponSection = () => (
+    <div className="bg-card border border-border rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2"><Tag size={16} className="text-primary" /><h3 className="font-semibold text-sm">Apply Coupon</h3></div>
+        <button onClick={() => navigate('/profile?tab=rewards')} className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"><Gift size={12} /> Get Coupon</button>
+      </div>
+      {appliedCoupon ? (
+        <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+          <span className="text-green-600 text-sm font-semibold flex items-center gap-1"><Check size={14} /> {appliedCoupon} applied (-৳{discountAmount.toFixed(0)})</span>
+          <button onClick={() => { setAppliedCoupon(''); setAppliedCouponData(null); setDiscount(0); setDiscountFlat(0); }} className="text-xs text-muted-foreground hover:text-destructive">Remove</button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <Input placeholder="Enter coupon code" value={coupon} onChange={e => setCoupon(e.target.value)} className="h-9 text-sm flex-1" />
+          <Button size="sm" variant="outline" onClick={applyCoupon} className="h-9">Apply</Button>
+        </div>
+      )}
+      {couponError && <p className="text-destructive text-xs mt-2">{couponError}</p>}
+    </div>
+  );
+
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
-        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
-          <ShoppingBag size={40} className="text-muted-foreground" />
+      <div className="max-w-screen-lg mx-auto px-4 py-5 pb-nav lg:pb-8">
+        <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 px-4">
+          <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center">
+            <ShoppingBag size={40} className="text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-bold">আপনার কার্ট খালি</h2>
+          <p className="text-muted-foreground text-sm text-center">শপিং শুরু করতে পণ্য যোগ করুন</p>
+          <Button onClick={() => navigate('/')} className="mt-2">Start Shopping</Button>
         </div>
-        <h2 className="text-xl font-bold">আপনার কার্ট খালি</h2>
-        <p className="text-muted-foreground text-sm text-center">শপিং শুরু করতে পণ্য যোগ করুন</p>
-        <Button onClick={() => navigate('/')} className="mt-2">Start Shopping</Button>
+        {/* Show suggestions even when cart is empty */}
+        {suggestedProducts.length > 0 && (
+          <section className="mt-6">
+            <h2 className="font-bold text-base mb-3">Recommended for You</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {suggestedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+            </div>
+          </section>
+        )}
       </div>
     );
   }
@@ -121,21 +159,7 @@ export default function CartPage() {
         </div>
 
         <div className="mt-5 lg:mt-0 space-y-3">
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3"><Tag size={16} className="text-primary" /><h3 className="font-semibold text-sm">Apply Coupon</h3></div>
-            {appliedCoupon ? (
-              <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-                <span className="text-green-600 text-sm font-semibold flex items-center gap-1"><Check size={14} /> {appliedCoupon} applied (-৳{discountAmount.toFixed(0)})</span>
-                <button onClick={() => { setAppliedCoupon(''); setAppliedCouponData(null); setDiscount(0); setDiscountFlat(0); }} className="text-xs text-muted-foreground hover:text-destructive">Remove</button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <Input placeholder="Enter coupon code" value={coupon} onChange={e => setCoupon(e.target.value)} className="h-9 text-sm flex-1" />
-                <Button size="sm" variant="outline" onClick={applyCoupon} className="h-9">Apply</Button>
-              </div>
-            )}
-            {couponError && <p className="text-destructive text-xs mt-2">{couponError}</p>}
-          </div>
+          <CouponSection />
 
           <div className="bg-card border border-border rounded-xl p-4">
             <h3 className="font-bold mb-4">Order Summary</h3>
@@ -153,7 +177,6 @@ export default function CartPage() {
                 <div className="border-t border-border pt-2 flex justify-between text-base"><span className="font-bold">Total</span><span className="font-bold text-primary">৳{finalTotal.toFixed(0)}</span></div>
               </div>
             </div>
-            {/* Checkout button in summary card - desktop only */}
             <Button
               className="w-full mt-4 h-12 font-semibold hidden lg:flex items-center justify-center gap-2"
               onClick={() => navigate('/checkout', { state: { selectedItems, discount, couponCode: appliedCoupon, couponData: appliedCouponData } })}
@@ -165,7 +188,17 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Mobile sticky checkout button only */}
+      {/* Product Suggestions */}
+      {suggestedProducts.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-bold text-base mb-3">Recommended for You</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {suggestedProducts.map(p => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
+
+      {/* Mobile sticky checkout button */}
       <div className="fixed bottom-16 left-0 right-0 p-3 bg-card/95 backdrop-blur border-t border-border lg:hidden z-40">
         <Button
           className="w-full h-12 font-semibold flex items-center justify-center gap-2"

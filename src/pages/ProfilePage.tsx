@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders, useSettings, bindReferral, generateLoyaltyCoupon, useMyCoupons } from '@/hooks/useFirestoreData';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -9,15 +9,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, MapPin, Package, Gift, Settings, Star, Copy, Check, ExternalLink, Clock, Shield, FileText, RotateCcw, Save, Ticket } from 'lucide-react';
+import { User, MapPin, Package, Gift, Settings, Star, Copy, Check, ExternalLink, Clock, Shield, FileText, RotateCcw, Save, Ticket, Share2, Link2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const { user, userData, logout, refreshUserData } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [referralInput, setReferralInput] = useState('');
   const [referralMsg, setReferralMsg] = useState('');
   const [referralErr, setReferralErr] = useState('');
@@ -31,6 +33,9 @@ export default function ProfilePage() {
   const { orders, loading: ordersLoading } = useOrders(user?.uid);
   const { coupons: myCoupons } = useMyCoupons(user?.uid);
   const [couponCopied, setCouponCopied] = useState('');
+
+  // Default tab from URL param
+  const defaultTab = searchParams.get('tab') || 'orders';
 
   useEffect(() => {
     if (userData) {
@@ -53,10 +58,42 @@ export default function ProfilePage() {
     );
   }
 
+  const referralCode = userData?.referralCode || '';
+  const referralLink = `${window.location.origin}/auth?ref=${referralCode}`;
+
   const copyReferralCode = () => {
-    navigator.clipboard.writeText(userData?.referralCode || '');
+    navigator.clipboard.writeText(referralCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(referralLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const shareReferralLink = async () => {
+    const text = `${settings.appName} এ জয়েন করুন এবং বোনাস পয়েন্ট পান! আমার রেফারেল লিংক ব্যবহার করুন:`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: settings.appName, text, url: referralLink });
+      } catch {}
+    } else {
+      copyReferralLink();
+    }
+  };
+
+  const shareOnSocial = async (platform: string) => {
+    const text = `${settings.appName} - সেরা অনলাইন শপিং অভিজ্ঞতা!`;
+    const appUrl = window.location.origin;
+    let shareUrl = '';
+    switch (platform) {
+      case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(appUrl)}`; break;
+      case 'whatsapp': shareUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + referralLink)}`; break;
+      case 'twitter': shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralLink)}`; break;
+    }
+    if (shareUrl) window.open(shareUrl, '_blank', 'width=600,height=400');
   };
 
   const handleBindReferral = async () => {
@@ -129,7 +166,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Tabs defaultValue="orders">
+      <Tabs defaultValue={defaultTab}>
         <TabsList className="w-full grid grid-cols-4 mb-5 h-auto rounded-xl">
           <TabsTrigger value="orders" className="py-2 text-xs rounded-lg flex-col gap-1 h-14"><Package size={14} />Orders</TabsTrigger>
           <TabsTrigger value="rewards" className="py-2 text-xs rounded-lg flex-col gap-1 h-14"><Gift size={14} />Rewards</TabsTrigger>
@@ -184,22 +221,10 @@ export default function ProfilePage() {
               <p className="text-xs text-muted-foreground mb-3">আপনার পয়েন্ট ব্যবহার করে একটি ডিসকাউন্ট কুপন তৈরি করুন।</p>
               <div className="space-y-2">
                 <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    value={pointsToRedeem}
-                    onChange={e => setPointsToRedeem(e.target.value)}
-                    placeholder={`Max: ${maxRedeemable} pts`}
-                    className="h-9 text-sm flex-1"
-                    max={maxRedeemable}
-                    min={pointsPerTaka}
-                  />
-                  <Button size="sm" onClick={handleRedeemPoints} disabled={generatingCoupon} className="h-9">
-                    {generatingCoupon ? 'Creating...' : 'Generate'}
-                  </Button>
+                  <Input type="number" value={pointsToRedeem} onChange={e => setPointsToRedeem(e.target.value)} placeholder={`Max: ${maxRedeemable} pts`} className="h-9 text-sm flex-1" max={maxRedeemable} min={pointsPerTaka} />
+                  <Button size="sm" onClick={handleRedeemPoints} disabled={generatingCoupon} className="h-9">{generatingCoupon ? 'Creating...' : 'Generate'}</Button>
                 </div>
-                {previewDiscount > 0 && (
-                  <p className="text-xs text-primary font-medium">{pointsToRedeem} points = ৳{previewDiscount} discount</p>
-                )}
+                {previewDiscount > 0 && <p className="text-xs text-primary font-medium">{pointsToRedeem} points = ৳{previewDiscount} discount</p>}
                 {redeemMsg && <p className="text-xs text-green-600 bg-green-500/10 p-2 rounded-lg">{redeemMsg}</p>}
                 {redeemErr && <p className="text-xs text-destructive">{redeemErr}</p>}
               </div>
@@ -215,18 +240,9 @@ export default function ProfilePage() {
                   <div key={c.id} className="flex items-center gap-3 bg-muted/50 rounded-xl p-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold font-mono text-primary">{c.code}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {c.discountPercent > 0 ? `${c.discountPercent}% off` : `৳${c.maxDiscount} flat discount`}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{c.discountPercent > 0 ? `${c.discountPercent}% off` : `৳${c.maxDiscount} flat discount`}</p>
                     </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(c.code);
-                        setCouponCopied(c.id);
-                        setTimeout(() => setCouponCopied(''), 2000);
-                      }}
-                      className="p-2 hover:bg-border rounded-lg"
-                    >
+                    <button onClick={() => { navigator.clipboard.writeText(c.code); setCouponCopied(c.id); setTimeout(() => setCouponCopied(''), 2000); }} className="p-2 hover:bg-border rounded-lg">
                       {couponCopied === c.id ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-muted-foreground" />}
                     </button>
                   </div>
@@ -236,14 +252,33 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Referral Program */}
+          {/* Referral Program with Deep Link */}
           <div className="bg-card border border-border rounded-xl p-4">
             <h2 className="font-semibold text-sm mb-3 flex items-center gap-2"><Gift size={14} /> Referral Program</h2>
-            <p className="text-xs text-muted-foreground mb-3">আপনার রেফারেল কোড শেয়ার করুন এবং প্রতি রেফারেলে ৫০ পয়েন্ট পান।</p>
-            <div className="flex items-center gap-2 bg-muted rounded-xl p-3 mb-4">
-              <code className="flex-1 text-sm font-bold font-mono text-primary">{userData?.referralCode || '--------'}</code>
+            <p className="text-xs text-muted-foreground mb-3">আপনার রেফারেল লিংক শেয়ার করুন এবং প্রতি রেফারেলে ৫০ পয়েন্ট পান। লিংকে ক্লিক করে রেজিস্টার করলেই রেফারেল সফল হবে!</p>
+            
+            {/* Referral Code */}
+            <div className="flex items-center gap-2 bg-muted rounded-xl p-3 mb-3">
+              <code className="flex-1 text-sm font-bold font-mono text-primary">{referralCode || '--------'}</code>
               <button onClick={copyReferralCode} className="p-1.5 hover:bg-border rounded-lg">{copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-muted-foreground" />}</button>
             </div>
+
+            {/* Deep Link */}
+            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl p-3 mb-3">
+              <Link2 size={14} className="text-primary shrink-0" />
+              <span className="flex-1 text-xs font-mono text-primary truncate">{referralLink}</span>
+              <button onClick={copyReferralLink} className="p-1.5 hover:bg-border rounded-lg shrink-0">
+                {linkCopied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-muted-foreground" />}
+              </button>
+            </div>
+
+            {/* Share buttons */}
+            <div className="flex gap-2 mb-4">
+              <button onClick={() => shareOnSocial('whatsapp')} className="flex-1 h-9 rounded-lg bg-[#25D366] text-white text-xs font-semibold hover:opacity-80 transition-opacity">WhatsApp</button>
+              <button onClick={() => shareOnSocial('facebook')} className="flex-1 h-9 rounded-lg bg-[#1877F2] text-white text-xs font-semibold hover:opacity-80 transition-opacity">Facebook</button>
+              <button onClick={shareReferralLink} className="flex-1 h-9 rounded-lg bg-muted text-foreground text-xs font-semibold hover:bg-muted/80 transition-colors flex items-center justify-center gap-1"><Share2 size={12} /> Share</button>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs">রেফারেল কোড ব্যবহার করুন</Label>
               <div className="flex gap-2">
@@ -255,31 +290,28 @@ export default function ProfilePage() {
               {userData?.referredBy && <p className="text-xs text-muted-foreground">✓ Referred by: {userData.referredBy}</p>}
             </div>
           </div>
+
+          {/* Share App for Rewards */}
+          <div className="bg-card border border-border rounded-xl p-4">
+            <h2 className="font-semibold text-sm mb-2 flex items-center gap-2"><Share2 size={14} className="text-primary" /> Share & Earn</h2>
+            <p className="text-xs text-muted-foreground mb-3">সোশ্যাল মিডিয়ায় অ্যাপ শেয়ার করুন এবং পয়েন্ট পান!</p>
+            <div className="flex gap-2">
+              <button onClick={() => shareOnSocial('facebook')} className="flex-1 h-10 rounded-xl bg-[#1877F2] text-white text-xs font-semibold hover:opacity-80">Facebook</button>
+              <button onClick={() => shareOnSocial('whatsapp')} className="flex-1 h-10 rounded-xl bg-[#25D366] text-white text-xs font-semibold hover:opacity-80">WhatsApp</button>
+              <button onClick={() => shareOnSocial('twitter')} className="flex-1 h-10 rounded-xl bg-[#1DA1F2] text-white text-xs font-semibold hover:opacity-80">Twitter</button>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-4">
           <div className="bg-card border border-border rounded-xl p-4 space-y-3">
             <h2 className="font-semibold text-sm">Personal Information</h2>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Full Name</Label>
-              <Input value={profileForm.displayName} onChange={e => setProfileForm(f => ({ ...f, displayName: e.target.value }))} className="h-10" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
-              <Input defaultValue={user.email || ''} disabled className="h-10 bg-muted" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Phone</Label>
-              <Input value={profileForm.phone} onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))} placeholder="+880" className="h-10" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Delivery Address</Label>
-              <Input value={profileForm.deliveryAddress} onChange={e => setProfileForm(f => ({ ...f, deliveryAddress: e.target.value }))} placeholder="আপনার ডেলিভারি ঠিকানা" className="h-10" />
-            </div>
-            <Button size="sm" className="w-full gap-2" onClick={handleSaveProfile} disabled={profileSaving}>
-              <Save size={14} /> {profileSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
+            <div className="space-y-1.5"><Label className="text-xs">Full Name</Label><Input value={profileForm.displayName} onChange={e => setProfileForm(f => ({ ...f, displayName: e.target.value }))} className="h-10" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Email</Label><Input defaultValue={user.email || ''} disabled className="h-10 bg-muted" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Phone</Label><Input value={profileForm.phone} onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))} placeholder="+880" className="h-10" /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Delivery Address</Label><Input value={profileForm.deliveryAddress} onChange={e => setProfileForm(f => ({ ...f, deliveryAddress: e.target.value }))} placeholder="আপনার ডেলিভারি ঠিকানা" className="h-10" /></div>
+            <Button size="sm" className="w-full gap-2" onClick={handleSaveProfile} disabled={profileSaving}><Save size={14} /> {profileSaving ? 'Saving...' : 'Save Changes'}</Button>
           </div>
         </TabsContent>
 

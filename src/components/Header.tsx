@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShoppingCart, Menu, X, LogOut, User, Package, Settings, HeadphonesIcon } from 'lucide-react';
+import { Search, ShoppingCart, Menu, X, LogOut, User, Package, Settings, HeadphonesIcon, Star, SlidersHorizontal } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProducts, useSettings } from '@/hooks/useFirestoreData';
@@ -23,7 +23,6 @@ export default function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  // Dynamic search placeholder cycling product names
   const placeholderText = products.length > 0
     ? `Search "${products[placeholderIndex % products.length]?.name?.slice(0, 25)}..."`
     : 'Search products...';
@@ -36,7 +35,6 @@ export default function Header() {
     return () => clearInterval(interval);
   }, [products.length]);
 
-  // Admin users should only see admin panel
   const isAdmin = userData?.role === 'admin';
 
   useEffect(() => {
@@ -62,11 +60,13 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = searchQuery.trim() || products[placeholderIndex % products.length]?.name || '';
+    if (q) {
+      navigate(`/search?q=${encodeURIComponent(q)}`);
       setShowSuggestions(false);
+      setSearchQuery('');
     }
   };
 
@@ -83,10 +83,17 @@ export default function Header() {
     ) : null
   );
 
-  // If admin, redirect to admin panel
-  if (isAdmin) {
-    return null; // Admin layout handled separately
-  }
+  const PointsBadge = () => {
+    if (!user || !userData) return null;
+    return (
+      <button onClick={() => navigate('/profile?tab=rewards')} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-accent/10 hover:bg-accent/20 transition-colors" title="Loyalty Points">
+        <Star size={12} className="text-accent fill-accent" />
+        <span className="text-xs font-bold text-accent">{userData.loyaltyPoints || 0}</span>
+      </button>
+    );
+  };
+
+  if (isAdmin) return null;
 
   return (
     <>
@@ -102,6 +109,7 @@ export default function Header() {
             <img src={settings.appLogo || '/logo.png'} alt={settings.appName} className="w-8 h-8 object-contain" onError={e => { (e.target as HTMLImageElement).src = '/logo.png'; }} />
             <span className="font-bold text-lg text-primary">{settings.appName}</span>
           </Link>
+          <PointsBadge />
           <Link to="/cart" className="relative p-2">
             <ShoppingCart size={22} className="text-foreground" />
             {itemCount > 0 && (
@@ -112,10 +120,18 @@ export default function Header() {
 
         {/* Sticky search bar mobile */}
         <div className="lg:hidden px-4 pb-2" ref={searchRef}>
-          <form onSubmit={handleSearch} className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} placeholder={placeholderText} className="pl-9 h-9 rounded-xl bg-muted border-0 text-sm" />
-            <SuggestionsDropdown />
+          <form onSubmit={handleSearch} className="relative flex gap-2">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} placeholder={placeholderText} className="pl-9 pr-3 h-9 rounded-xl bg-muted border-0 text-sm" />
+              <SuggestionsDropdown />
+            </div>
+            <button type="submit" className="h-9 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shrink-0">
+              <Search size={14} />
+            </button>
+            <button type="button" onClick={() => navigate('/search')} className="h-9 w-9 rounded-xl border border-border bg-card flex items-center justify-center shrink-0">
+              <SlidersHorizontal size={14} className="text-muted-foreground" />
+            </button>
           </form>
         </div>
 
@@ -126,9 +142,15 @@ export default function Header() {
             <span className="font-bold text-xl text-primary">{settings.appName}</span>
           </Link>
           <div ref={searchRef} className="flex-1 max-w-xl relative">
-            <form onSubmit={handleSearch} className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} placeholder={placeholderText} className="pl-9 rounded-xl bg-muted border-0" />
+            <form onSubmit={handleSearch} className="relative flex gap-2">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onFocus={() => suggestions.length > 0 && setShowSuggestions(true)} placeholder={placeholderText} className="pl-9 rounded-xl bg-muted border-0" />
+              </div>
+              <Button type="submit" size="sm" className="h-10 px-4 rounded-xl">Search</Button>
+              <button type="button" onClick={() => navigate('/search')} className="h-10 w-10 rounded-xl border border-border bg-card flex items-center justify-center shrink-0 hover:bg-muted transition-colors">
+                <SlidersHorizontal size={14} className="text-muted-foreground" />
+              </button>
             </form>
             <SuggestionsDropdown />
           </div>
@@ -137,6 +159,7 @@ export default function Header() {
             <Link to="/support" className="px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Support</Link>
           </nav>
           <div className="flex items-center gap-2">
+            <PointsBadge />
             <Link to="/cart" className="relative p-2 hover:bg-muted rounded-lg transition-colors">
               <ShoppingCart size={20} />
               {itemCount > 0 && (

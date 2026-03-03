@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Check, MapPin, Truck, CreditCard, ChevronRight, Banknote, Smartphone, Copy, Upload, ImageIcon, Tag, X } from 'lucide-react';
+import { Check, MapPin, Truck, CreditCard, ChevronRight, Banknote, Smartphone, Copy, Upload, ImageIcon, Tag, X, Gift } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const steps = [
@@ -190,9 +190,9 @@ export default function CheckoutPage() {
         }
       }
 
-      // Delete coupon after use (remove from Firebase completely - one-time use)
+      // Delete coupon after use — only delete user-specific (loyalty) coupons, admin coupons are unlimited
       const couponToDelete = appliedCoupon || stateCouponData;
-      if (couponToDelete?.id) {
+      if (couponToDelete?.id && couponToDelete?.userId) {
         try {
           const { deleteCoupon } = await import('@/hooks/useFirestoreData');
           await deleteCoupon(couponToDelete.id);
@@ -330,7 +330,10 @@ export default function CheckoutPage() {
 
           {/* Coupon */}
           <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3"><Tag size={14} className="text-primary" /><p className="text-sm font-semibold">Apply Coupon</p></div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2"><Tag size={14} className="text-primary" /><p className="text-sm font-semibold">Apply Coupon</p></div>
+              <button onClick={() => navigate('/profile?tab=rewards')} className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"><Gift size={12} /> Get Coupon</button>
+            </div>
             {appliedCoupon ? (
               <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 rounded-lg p-3">
                 <span className="text-green-600 text-sm font-semibold flex items-center gap-1"><Check size={14} /> {appliedCoupon.code} applied (-৳{discountAmount.toFixed(0)})</span>

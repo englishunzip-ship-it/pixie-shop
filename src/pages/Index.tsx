@@ -37,7 +37,7 @@ export default function Index() {
                 <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentBanner * 100}%)` }}>
                   {banners.map(banner => (
                     <Link key={banner.id} to={banner.link || '/'} className="block shrink-0 w-full">
-                      <img src={banner.image} alt="" className="w-full h-44 lg:h-72 object-cover" />
+                      <img src={banner.image} alt="" className="w-full h-32 sm:h-36 lg:h-72 object-cover" />
                     </Link>
                   ))}
                 </div>
@@ -50,7 +50,7 @@ export default function Index() {
                 )}
               </div>
             ) : (
-              <div className="bg-muted rounded-2xl h-44 lg:h-72 flex items-center justify-center text-muted-foreground">
+              <div className="bg-muted rounded-2xl h-32 sm:h-36 lg:h-72 flex items-center justify-center text-muted-foreground">
                 <Package size={40} className="opacity-30" />
               </div>
             )}
