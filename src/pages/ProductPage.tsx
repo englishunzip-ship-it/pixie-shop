@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks/useFirestoreData';
 import { useCart } from '@/contexts/CartContext';
-import { Star, Minus, Plus, ChevronLeft, ChevronRight, Truck, Shield, RotateCcw, ShoppingCart, ThumbsUp, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Star, Minus, Plus, ChevronLeft, ChevronRight, Truck, Shield, RotateCcw, ShoppingCart, ThumbsUp, CheckCircle, AlertTriangle, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -16,12 +16,47 @@ const staticReviews = [
   { id: 'r4', userName: 'Sumaiya R.', rating: 3, comment: 'পণ্য ভালো, তবে ডেলিভারি একটু দেরিতে এসেছে।', date: '2024-12-20', helpful: 3 },
 ];
 
+function ShareButtons({ product }: { product: any }) {
+  const url = window.location.href;
+  const text = `${product.name} - ৳${product.price}`;
+  
+  const shareLinks = [
+    { name: 'Facebook', color: 'bg-[#1877F2]', icon: 'f', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}` },
+    { name: 'WhatsApp', color: 'bg-[#25D366]', icon: 'w', url: `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}` },
+    { name: 'Messenger', color: 'bg-[#0084FF]', icon: 'm', url: `https://www.facebook.com/dialog/send?link=${encodeURIComponent(url)}&app_id=0&redirect_uri=${encodeURIComponent(url)}` },
+    { name: 'Twitter', color: 'bg-[#1DA1F2]', icon: 'x', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}` },
+  ];
+
+  const handleNativeShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: product.name, text, url });
+      } catch {}
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-4">
+      <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><Share2 size={13} /> Share:</span>
+      {shareLinks.map(s => (
+        <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" className={`w-8 h-8 rounded-full ${s.color} text-white flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity`} title={s.name}>
+          {s.icon.toUpperCase()}
+        </a>
+      ))}
+      {typeof navigator.share === 'function' && (
+        <button onClick={handleNativeShare} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80"><Share2 size={14} /></button>
+      )}
+    </div>
+  );
+}
+
 export default function ProductPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { products } = useProducts();
   const product = products.find(p => p.id === id);
   const related = product ? products.filter(p => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 4) : [];
+  const otherCategoryProducts = product ? products.filter(p => p.categoryId !== product.categoryId).slice(0, 8) : [];
   const { addToCart } = useCart();
   const [currentImage, setCurrentImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
@@ -120,6 +155,9 @@ export default function ProductPage() {
                 : <span className="text-destructive text-sm font-semibold">Out of Stock</span>}
             </div>
 
+            {/* Social Share */}
+            <ShareButtons product={product} />
+
             {product.colors && product.colors.length > 0 && (
               <div className="mt-4">
                 <p className="text-sm font-semibold mb-2">Color: <span className="font-normal text-muted-foreground">{selectedColor || product.colors[0]}</span></p>
@@ -188,16 +226,24 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Similar/Suggested Products - below reviews */}
+        {/* Similar Products */}
         {related.length > 0 && (
           <section className="mt-4 px-4 lg:px-0">
             <h2 className="font-bold text-base mb-4">Similar Products</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">{related.map(p => <ProductCard key={p.id} product={p} />)}</div>
           </section>
         )}
+
+        {/* Other Category Products */}
+        {otherCategoryProducts.length > 0 && (
+          <section className="mt-6 px-4 lg:px-0">
+            <h2 className="font-bold text-base mb-4">You May Also Like</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">{otherCategoryProducts.map(p => <ProductCard key={p.id} product={p} />)}</div>
+          </section>
+        )}
       </div>
 
-      {/* Mobile sticky action bar - no floating */}
+      {/* Mobile sticky action bar */}
       <div className="lg:hidden fixed bottom-16 left-0 right-0 p-3 bg-card border-t border-border z-30">
         <div className="flex gap-3 max-w-screen-xl mx-auto">
           <Button variant="outline" className="flex-1 h-11 font-semibold text-sm gap-2" onClick={handleAddToCart} disabled={product.stock === 0}>

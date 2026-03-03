@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSettings } from '@/hooks/useFirestoreData';
+import { useSettings, bindReferral } from '@/hooks/useFirestoreData';
 import { motion } from 'framer-motion';
 
 export default function AuthPage() {
@@ -18,6 +19,8 @@ export default function AuthPage() {
   const { login, register, resetPassword } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get('ref') || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +39,11 @@ export default function AuthPage() {
             try {
               const name = form.email.split('@')[0];
               await register(form.email, form.password, name);
+              // Auto-bind referral if ref code present in URL
+              const currentUser = getAuth().currentUser;
+              if (refCode && currentUser?.uid) {
+                try { await bindReferral(currentUser.uid, refCode); } catch {}
+              }
               navigate('/');
             } catch (regErr: any) {
               if (regErr.code === 'auth/email-already-in-use') {
