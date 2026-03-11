@@ -57,8 +57,7 @@ export default function AdminPage() {
   const openDialog = (type: string, item?: any) => { setForm(item ? { ...item } : {}); setDialog({ type, item }); };
   const closeDialog = () => { setDialog(null); setForm({}); };
 
-
-    setSaving(true);
+  const saveProduct = async () => {
     try {
       const selectedCat = categories.find(c => c.id === form.categoryId);
       const isDigital = !!form.isDigital;
