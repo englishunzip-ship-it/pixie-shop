@@ -631,11 +631,11 @@ export default function AdminPage() {
                   <button onClick={() => setForm((f: any) => ({ ...f, images: f.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center">×</button>
                 </div>
               ))}</div>
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Plus size={14} /> Add Image
-                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'images')} className="hidden" disabled={imgUploading} />
-              </label>
-              {imgUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+              <div className="flex gap-2">
+                <Input value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="Image URL paste করুন" className="flex-1 text-xs" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addImageUrl('images')}>Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+              </div>
             </div>
             <Button onClick={saveProduct} disabled={saving} className="w-full">{saving ? 'Saving...' : 'Save Product'}</Button>
           </div>
