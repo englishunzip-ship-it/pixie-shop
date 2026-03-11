@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings, validateCoupon } from '@/hooks/useFirestoreData';
-import { uploadImageToImgBB } from '@/lib/imgbb';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const location = useLocation();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [screenshotUploading, setScreenshotUploading] = useState(false);
+  
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -101,15 +101,7 @@ export default function CheckoutPage() {
     } finally { setCouponLoading(false); }
   };
 
-  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setScreenshotUploading(true);
-    try {
-      const url = await uploadImageToImgBB(file);
-      setMobilePayment(m => ({ ...m, screenshot: url }));
-    } catch { } finally { setScreenshotUploading(false); }
-  };
+  const [screenshotUrlInput, setScreenshotUrlInput] = useState('');
 
   const placeOrder = async () => {
     if (!user) { navigate('/auth'); return; }
@@ -384,10 +376,11 @@ export default function CheckoutPage() {
                     <button onClick={() => setMobilePayment(m => ({ ...m, screenshot: '' }))} className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">×</button>
                   </div>
                 ) : (
-                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted transition-colors text-sm text-muted-foreground">
-                    <Upload size={14} /> {screenshotUploading ? 'Uploading...' : 'Upload Screenshot'}
-                    <input type="file" accept="image/*" onChange={handleScreenshotUpload} className="hidden" disabled={screenshotUploading} />
-                  </label>
+                  <div className="flex gap-2">
+                    <Input value={screenshotUrlInput} onChange={e => setScreenshotUrlInput(e.target.value)} placeholder="Screenshot URL paste করুন" className="flex-1 text-xs" />
+                    <Button type="button" size="sm" variant="outline" onClick={() => { if (screenshotUrlInput.trim()) { setMobilePayment(m => ({ ...m, screenshot: screenshotUrlInput.trim() })); setScreenshotUrlInput(''); } }}>Add</Button>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+                  </div>
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground">Transaction ID অথবা Screenshot — যেকোনো একটি দিন।</p>

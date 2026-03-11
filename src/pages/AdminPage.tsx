@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useProducts, useCategories, useBanners, useCoupons, useAllOrders, useAllUsers, useSettings, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addBanner, updateBanner, deleteBanner, addCoupon, updateCoupon, deleteCoupon, updateOrderStatus, updateSettings, Product, Category, Banner, Coupon } from '@/hooks/useFirestoreData';
 import { ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
-import { uploadImageToImgBB } from '@/lib/imgbb';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { Package, Users, Tag, TrendingUp, Edit, Trash2, Plus, Save, X, Ticket, Menu, LayoutDashboard, ImageIcon, BadgePercent, ClipboardList, UserCog, Cog, DollarSign, Clock, ExternalLink, ChevronDown, ChevronUp, Eye, Monitor, Globe, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,18 @@ export default function AdminPage() {
   const [dialog, setDialog] = useState<{ type: string; item?: any } | null>(null);
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
-  const [imgUploading, setImgUploading] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+
+  const addImageUrl = (field = 'image') => {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (field === 'images') {
+      setForm((f: any) => ({ ...f, images: [...(f.images || []), url] }));
+    } else {
+      setForm((f: any) => ({ ...f, [field]: url }));
+    }
+    setImageUrlInput('');
+  };
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderFilter, setOrderFilter] = useState('all');
 
@@ -46,22 +57,7 @@ export default function AdminPage() {
   const openDialog = (type: string, item?: any) => { setForm(item ? { ...item } : {}); setDialog({ type, item }); };
   const closeDialog = () => { setDialog(null); setForm({}); };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field = 'image') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImgUploading(true);
-    try {
-      const url = await uploadImageToImgBB(file);
-      if (field === 'images') {
-        setForm((f: any) => ({ ...f, images: [...(f.images || []), url] }));
-      } else {
-        setForm((f: any) => ({ ...f, [field]: url }));
-      }
-    } catch { } finally { setImgUploading(false); }
-  };
-
   const saveProduct = async () => {
-    setSaving(true);
     try {
       const selectedCat = categories.find(c => c.id === form.categoryId);
       const isDigital = !!form.isDigital;
@@ -569,11 +565,11 @@ export default function AdminPage() {
             <div className="space-y-1.5">
               <Label>App Logo</Label>
               {(form.appLogo || settings.appLogo) && <img src={form.appLogo || settings.appLogo} alt="Logo" className="w-16 h-16 rounded-lg object-contain border border-border" />}
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Plus size={14} /> Upload Logo
-                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'appLogo')} className="hidden" disabled={imgUploading} />
-              </label>
-              {imgUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+              <div className="flex gap-2">
+                <Input value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="Image URL paste করুন" className="flex-1 text-xs" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addImageUrl('appLogo')}>Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+              </div>
             </div>
             <Button onClick={saveSettings} disabled={saving} className="w-full gap-2"><Save size={14} /> Save Settings</Button>
           </div>
@@ -641,11 +637,11 @@ export default function AdminPage() {
                   <button onClick={() => setForm((f: any) => ({ ...f, images: f.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-[10px] flex items-center justify-center">×</button>
                 </div>
               ))}</div>
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Plus size={14} /> Add Image
-                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'images')} className="hidden" disabled={imgUploading} />
-              </label>
-              {imgUploading && <p className="text-xs text-muted-foreground">Uploading...</p>}
+              <div className="flex gap-2">
+                <Input value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="Image URL paste করুন" className="flex-1 text-xs" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addImageUrl('images')}>Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+              </div>
             </div>
             <Button onClick={saveProduct} disabled={saving} className="w-full">{saving ? 'Saving...' : 'Save Product'}</Button>
           </div>
@@ -662,10 +658,11 @@ export default function AdminPage() {
             <div className="space-y-1.5">
               <Label>Image</Label>
               {form.image && <img src={form.image} className="w-20 h-20 rounded-lg object-cover" />}
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Plus size={14} /> Upload Image
-                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'image')} className="hidden" disabled={imgUploading} />
-              </label>
+              <div className="flex gap-2">
+                <Input value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="Image URL paste করুন" className="flex-1 text-xs" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addImageUrl('image')}>Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+              </div>
             </div>
             <Button onClick={saveCategory} disabled={saving} className="w-full">{saving ? 'Saving...' : 'Save'}</Button>
           </div>
@@ -682,10 +679,11 @@ export default function AdminPage() {
             <div className="space-y-1.5">
               <Label>Image</Label>
               {form.image && <img src={form.image} className="w-full h-32 rounded-lg object-cover" />}
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Plus size={14} /> Upload Image
-                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'image')} className="hidden" disabled={imgUploading} />
-              </label>
+              <div className="flex gap-2">
+                <Input value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="Image URL paste করুন" className="flex-1 text-xs" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addImageUrl('image')}>Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+              </div>
             </div>
             <Button onClick={saveBanner} disabled={saving} className="w-full">{saving ? 'Saving...' : 'Save'}</Button>
           </div>
