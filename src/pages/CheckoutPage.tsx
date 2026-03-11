@@ -101,15 +101,7 @@ export default function CheckoutPage() {
     } finally { setCouponLoading(false); }
   };
 
-  const handleScreenshotUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setScreenshotUploading(true);
-    try {
-      const url = await uploadImageToImgBB(file);
-      setMobilePayment(m => ({ ...m, screenshot: url }));
-    } catch { } finally { setScreenshotUploading(false); }
-  };
+  const [screenshotUrlInput, setScreenshotUrlInput] = useState('');
 
   const placeOrder = async () => {
     if (!user) { navigate('/auth'); return; }
