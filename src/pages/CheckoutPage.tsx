@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const location = useLocation();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [screenshotUploading, setScreenshotUploading] = useState(false);
+  
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
