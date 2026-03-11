@@ -376,10 +376,11 @@ export default function CheckoutPage() {
                     <button onClick={() => setMobilePayment(m => ({ ...m, screenshot: '' }))} className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full text-xs flex items-center justify-center">×</button>
                   </div>
                 ) : (
-                  <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted transition-colors text-sm text-muted-foreground">
-                    <Upload size={14} /> {screenshotUploading ? 'Uploading...' : 'Upload Screenshot'}
-                    <input type="file" accept="image/*" onChange={handleScreenshotUpload} className="hidden" disabled={screenshotUploading} />
-                  </label>
+                  <div className="flex gap-2">
+                    <Input value={screenshotUrlInput} onChange={e => setScreenshotUrlInput(e.target.value)} placeholder="Screenshot URL paste করুন" className="flex-1 text-xs" />
+                    <Button type="button" size="sm" variant="outline" onClick={() => { if (screenshotUrlInput.trim()) { setMobilePayment(m => ({ ...m, screenshot: screenshotUrlInput.trim() })); setScreenshotUrlInput(''); } }}>Add</Button>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+                  </div>
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground">Transaction ID অথবা Screenshot — যেকোনো একটি দিন।</p>

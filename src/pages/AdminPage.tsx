@@ -673,10 +673,11 @@ export default function AdminPage() {
             <div className="space-y-1.5">
               <Label>Image</Label>
               {form.image && <img src={form.image} className="w-full h-32 rounded-lg object-cover" />}
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border cursor-pointer hover:bg-muted transition-colors text-sm">
-                <Plus size={14} /> Upload Image
-                <input type="file" accept="image/*" onChange={e => handleImageUpload(e, 'image')} className="hidden" disabled={imgUploading} />
-              </label>
+              <div className="flex gap-2">
+                <Input value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="Image URL paste করুন" className="flex-1 text-xs" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addImageUrl('image')}>Add</Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => window.open('https://postimg.cc', '_blank')}>Get URL</Button>
+              </div>
             </div>
             <Button onClick={saveBanner} disabled={saving} className="w-full">{saving ? 'Saving...' : 'Save'}</Button>
           </div>
