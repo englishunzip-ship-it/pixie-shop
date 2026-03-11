@@ -49,8 +49,15 @@ export default function AdminPage() {
     }
     setImageUrlInput('');
   };
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [orderFilter, setOrderFilter] = useState('all');
 
-  const saveProduct = async () => {
+  if (userData?.role !== 'admin') return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Access Denied</p></div>;
+
+  const openDialog = (type: string, item?: any) => { setForm(item ? { ...item } : {}); setDialog({ type, item }); };
+  const closeDialog = () => { setDialog(null); setForm({}); };
+
+
     setSaving(true);
     try {
       const selectedCat = categories.find(c => c.id === form.categoryId);
