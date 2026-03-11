@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useProducts, useCategories, useBanners, useCoupons, useAllOrders, useAllUsers, useSettings, addProduct, updateProduct, deleteProduct, addCategory, updateCategory, deleteCategory, addBanner, updateBanner, deleteBanner, addCoupon, updateCoupon, deleteCoupon, updateOrderStatus, updateSettings, Product, Category, Banner, Coupon } from '@/hooks/useFirestoreData';
 import { ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon } from 'lucide-react';
-import { uploadImageToImgBB } from '@/lib/imgbb';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { Package, Users, Tag, TrendingUp, Edit, Trash2, Plus, Save, X, Ticket, Menu, LayoutDashboard, ImageIcon, BadgePercent, ClipboardList, UserCog, Cog, DollarSign, Clock, ExternalLink, ChevronDown, ChevronUp, Eye, Monitor, Globe, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
