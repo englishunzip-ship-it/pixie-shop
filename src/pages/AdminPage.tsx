@@ -37,27 +37,17 @@ export default function AdminPage() {
   const [dialog, setDialog] = useState<{ type: string; item?: any } | null>(null);
   const [form, setForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
-  const [imgUploading, setImgUploading] = useState(false);
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [orderFilter, setOrderFilter] = useState('all');
+  const [imageUrlInput, setImageUrlInput] = useState('');
 
-  if (userData?.role !== 'admin') return <div className="flex items-center justify-center min-h-[60vh]"><p className="text-muted-foreground">Access Denied</p></div>;
-
-  const openDialog = (type: string, item?: any) => { setForm(item ? { ...item } : {}); setDialog({ type, item }); };
-  const closeDialog = () => { setDialog(null); setForm({}); };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field = 'image') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImgUploading(true);
-    try {
-      const url = await uploadImageToImgBB(file);
-      if (field === 'images') {
-        setForm((f: any) => ({ ...f, images: [...(f.images || []), url] }));
-      } else {
-        setForm((f: any) => ({ ...f, [field]: url }));
-      }
-    } catch { } finally { setImgUploading(false); }
+  const addImageUrl = (field = 'image') => {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (field === 'images') {
+      setForm((f: any) => ({ ...f, images: [...(f.images || []), url] }));
+    } else {
+      setForm((f: any) => ({ ...f, [field]: url }));
+    }
+    setImageUrlInput('');
   };
 
   const saveProduct = async () => {
